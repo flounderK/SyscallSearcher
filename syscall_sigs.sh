@@ -18,5 +18,5 @@ find $1 -type f -iname '*.c' -o -iname '*.h' | xargs sed -nr '/SYSCALL_DEFINE[[:
         s/\t+/ /g;
         s/ +/ /g;
         ba
-}' | grep -v '^#define' | grep -v 'foobar' | grep -v 'SYSCALL_DEFINE0()'
+}' | grep -v '^#define' | grep -v 'foobar' | grep -v 'SYSCALL_DEFINE0()' | tee "$HOME/.syscall_sigs"
 
