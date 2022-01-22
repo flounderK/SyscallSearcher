@@ -22,13 +22,30 @@ class Syscall:
             self.arg_names = []
             self.argcount = 0
             self._repr = "%s()" % self.name
+            self._typename_repr = self._repr
+            self._argname_repr = self._repr
+            self._full_repr = self._repr
             return
 
         self._type_arg_tuples = [Arg(*i) for i in zip(*(iter(args),)*2)]
         self._repr = "%s(%s)" % (self.name, ', '.join(' '.join(i)
                                             for i in self._type_arg_tuples))
+        self._full_repr = self._repr
         self.type_names, self.arg_names = list(zip(*self._type_arg_tuples))
+        self._argname_repr = "%s(%s)" % (self.name, ', '.join(i for i in
+                                                              self.arg_names))
+        self._typename_repr = "%s(%s)" % (self.name, ', '.join(i for i in
+                                                               self.type_names))
         self.argcount = len(self.arg_names)
+
+    def set_full_repr(self):
+        self._repr = self._full_repr
+
+    def set_argname_repr(self):
+        self._repr = self._argname_repr
+
+    def set_typename_repr(self):
+        self._repr = self._typename_repr
 
     def __repr__(self):
         return self._repr
@@ -122,7 +139,15 @@ class SyscallSearcher:
         Search the repr of syscalls for the presence of the given pattern
         """
         return [i for i in self.syscall_list
-                if re.search(pattern, i._repr) is not None]
+                if re.search(pattern, i._full_repr) is not None]
+
+    def set_syscall_repr(self, rep):
+        if rep in ["f", "full"]:
+            [i.set_full_repr() for i in self.syscall_list]
+        elif rep in ["t", "typename"]:
+            [i.set_typename_repr() for i in self.syscall_list]
+        elif rep in ["a", "argname"]:
+            [i.set_argname_repr() for i in self.syscall_list]
 
     @staticmethod
     def from_sigs_file(filepath):
@@ -170,6 +195,9 @@ if __name__ == "__main__":
                         help="Name of argument's C type. e.g. 'unsigned long'")
     parser.add_argument("-x", "--negate", action="store_true", default=False,
                         help="Negate all other conditions for filter")
+    parser.add_argument("-r", "--repr", choices=["f", "full", "t", "typename",
+                                                 "a", "argname"], default="f",
+                        help="Set representations of syscalls")
     args = parser.parse_args()
     if not os.path.exists(args.syscall_sigs_file):
         print("You must first run 'syscall_sigs.sh' to generate the syscall "
@@ -181,6 +209,8 @@ if __name__ == "__main__":
                    "type": args.arg_type,
                    "syscall_name": args.syscall_name,
                    "negate": args.negate}
+    if args.repr not in ["f", "full"]:
+        ss.set_syscall_repr(args.repr)
     matched = ss.match_args(**filter_dict)
     for i in matched:
         print(i)
